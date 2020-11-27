@@ -12,13 +12,12 @@ import org.smart4j.framework.bean.FormParam;
 import org.smart4j.framework.bean.Param;
 import org.smart4j.framework.util.CollectionUtil;
 import org.smart4j.framework.util.FileUtil;
+import org.smart4j.framework.util.StreamUtil;
 import org.smart4j.framework.util.StringUtil;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -95,5 +94,43 @@ public final class UploadHelper {
             throw new RuntimeException(e);
         }
         return new Param(formParamList,fileParamList);
+    }
+
+    /**
+     * 上传文件
+     * @param basePath
+     * @param fileParam
+     */
+    public static void uploadFile(String basePath,FileParam fileParam){
+        try{
+            if (fileParam != null){
+                String filePath = basePath + fileParam.getFileName();
+                FileUtil.createFile(filePath);
+                InputStream inputStream = new BufferedInputStream(fileParam.getInputStream());
+                OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(filePath));
+                StreamUtil.copyStream(inputStream,outputStream);
+            }
+        }catch (Exception e){
+            LOGGER.error("upload file failure",e);
+            throw new RuntimeException();
+        }
+    }
+
+    /**
+     * 批量上传文件
+     * @param basePath
+     * @param fileParamList
+     */
+    public static void uploadFile(String basePath,List<FileParam> fileParamList){
+        try{
+            if (CollectionUtil.isNotEmpty(fileParamList)){
+                for (FileParam fileParam : fileParamList){
+                    uploadFile(basePath,fileParam);
+                }
+            }
+        }catch (Exception e){
+            LOGGER.error("upload file failure",e);
+            throw new RuntimeException();
+        }
     }
 }
