@@ -11,5 +11,7 @@
     <modules>
         <module>mySpring</module>
         <module>mySpring-security</module>
+        <module>mySpring-soap</module>
+        <module>mySpring-rest</module>
     </modules>
 </project>

@@ -6,8 +6,10 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="testFramework" />
         <module name="mySpring-security" />
+        <module name="mySpring-soap" />
+        <module name="mySpring-rest" />
+        <module name="testFramework" />
       </profile>
     </annotationProcessing>
   </component>
