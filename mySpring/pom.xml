@@ -97,5 +97,11 @@
             <version>1.0.0</version>
             <scope>compile</scope>
         </dependency>
+        <!-- codec -->
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.4</version>
+        </dependency>
     </dependencies>
 </project>

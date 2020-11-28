@@ -10,5 +10,6 @@
     <version>1.0.0</version>
     <modules>
         <module>mySpring</module>
+        <module>mySpring-security</module>
     </modules>
 </project>

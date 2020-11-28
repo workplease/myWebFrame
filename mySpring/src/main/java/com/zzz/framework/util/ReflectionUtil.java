@@ -18,7 +18,7 @@ public final class ReflectionUtil {
      * @param cls
      * @return
      */
-    public static Object newInstance(Class<?> cls){
+    public static Object newInstance(String cls){
         Object instance;
         try{
             instance = cls.newInstance();
