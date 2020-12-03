@@ -53,3 +53,28 @@ zzz.framework.app.asset_path=/asset/    #静态资源文件的基础路径
 我们并不是直接通过 new 的方式来实例化对象，而是通过框架本身进行实例化，像这类实例化的过程，称为 IoC（控制反转），也可以理解为将某个类需要依赖的成员注入到这个类中。
 
 实现方式是：先通过 BeanHelper 获取所有 Bean Map（是一个 Map<Class<?\>,Object\> 结构，记录了类与对象的映射关系）。然后遍历这个映射关系，分别取出 Bean 类与 Bean 实例，进而通过反射获取类中所有的成员变量。继续遍历这些成员变量，在循环中判断当前成员变量中是否带有 Inject 注解，若带有该注解，则从 Bean Map 中根据 Bean 类取出 Bean 实例，最后通过 ReflectionUtil 的 setField 方法来修改当前成员变量的值。
+
+6）加载 Controller：
+
+我们需要创建一个 ControllerHelper 类，让其来处理如下逻辑：
+
+通过 ClassHelper，我们可以获取所有定义了 Controller 注解的类，可以通过反射获取该类中所有带 Action 注解的方法（简称 “Action 方法” ），获取 Action 注解中的请求表达式，进而获取请求方法与路径，封装一个请求对象（Request）与处理对象（Handler），最后将 Request 与 Handler 建立一个映射关系，放入一个 Action Map 中，并提供一个可根据请求方法与请求对象获取处理对象的方法。
+
+Request（请求信息）：包含 requestMethod（请求方法）和 requestPath（请求路径）。
+
+Handler（处理对象）：包含 controllerClass（Controller 类）和 actionMethod（Action 方法）。
+
+7）初始化框架：
+
+需要定义一个入口程序来加载我们定义的 Helper 类，实际上就是加载它们的静态块。
+
+8）请求转发器：
+
+我们需要定义一个 Servlet，让它来处理所有的请求。从 HttpServletRequest 对象中获取请求方法与请求路径，通过 ControllerHelper 的 getHandler 方法来获取 Handler 对象。当拿到 Handler 对象后，我们可以方便的获取 Controller 的类，进而通过 BeanHelper 的 getBean 的方法可以获取 Controller 的实例对象。
+
+相关的类：
+
+1. Param：请求的参数对象，可以通过参数名获取指定类型的参数值，也可以获取所有参数的 Map 结构。
+2. View：返回的视图对象，其中包含了视图路径和该视图中所需的数据，该模型数据是一个 Map 类型的 “键值对”，可以在视图中根据模型的键名获取键值。
+3. Data：封装了一个 Object 的模型数据，框架会将该对象写入 HttpServletResponse 对象中，从而直接输出至浏览器。
+4. DispatcherServlet：用于处理所有的请求，根据请求信息从 ControllerHelper 中获取到对象的 Action 方法，然后使用反射技术调用 Action 方法，同时需要具体的传入方法参数，最后拿到返回值并判断返回值的类型，进行相应的处理。
