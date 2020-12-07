@@ -78,3 +78,27 @@ Handler（处理对象）：包含 controllerClass（Controller 类）和 action
 2. View：返回的视图对象，其中包含了视图路径和该视图中所需的数据，该模型数据是一个 Map 类型的 “键值对”，可以在视图中根据模型的键名获取键值。
 3. Data：封装了一个 Object 的模型数据，框架会将该对象写入 HttpServletResponse 对象中，从而直接输出至浏览器。
 4. DispatcherServlet：用于处理所有的请求，根据请求信息从 ControllerHelper 中获取到对象的 Action 方法，然后使用反射技术调用 Action 方法，同时需要具体的传入方法参数，最后拿到返回值并判断返回值的类型，进行相应的处理。
+
+### 3. 使框架具有 AOP 特性
+
+1）AOP 技术简介：
+
+AOP——面向切面编程，切面是 AOP 中的一个术语，表示从业务逻辑中分离出来的横切逻辑，比如说性能监控、日志记录、权限控制等，这些功能都可以从核心的业务逻辑代码中抽离出去，也就是说，通过 AOP 可以解决代码耦合问题，使职责更加单一。
+
+2）开发 AOP 框架：
+
+1. 定义切面注解：在框架中定义一个 Aspect 的注解，通过 @Target(ElementType.TYPE) 来设置该注解只能用在类上，该注解中包含一个名为 value 的属性，它是一个注解类，用来定义 Controller 这类注解。
+
+2. 搭建代理框架：
+
+   - Proxy 接口：代理接口，包含一个 doProxy 方法，传入一个 ProxyChain，用于执行 “链式操作”。
+   - ProxyChain 类：代理链，定义了一系列的成员变量，包括 targetClass（目标类）、targetObject（目标对象）、targetMethod（目标方法）、methodProxy（方法代理）、methodParams（方法参数），此外害包括 proxyList（代理列表）、proxyIndex（代理索引），这些成员变量在构造器中进行初始化，并且提供了几个重要的获值方法。
+   - ProxyManager 类：代理管理器，提供一个代理对象的方法，输入一个目标类和一组 Proxy 接口实现，输出一个代理对象。
+   - AspectProxy 抽象类：切面代理，提供一个模板方法，并在本抽象类实现中扩展相应的抽象方法。
+
+3. 加载 AOP 框架：
+
+   - BeanHelper：添加一个 setBean 方法，将 Bean 实例放入到 Bean Map 中。
+   - ClassHelper：添加两个方法，一是获取应用包名下某父类（或接口）的所有子类（或实现类），二是获取应用包名下带有某注解的所有类。
+   - AopHelper：添加三个方法，一是获取 Aspect 注解中设置的注解类，若该注解不是 Aspect 类，则可调用 ClassHelper 的 getClassSetByAnnotation 方法获取相关类，并把这些类放入目标类集合中，最终返回这个集合；二是获取代理类及其目标类集合之间的映射关系，一个代理类可对应一个目标类；三是根据代理类与目标类集合的关系分析出目标类与代理对象列表之间的映射关系。最后在 AopHelper 中通过一个静态块来初始化整个 AOP 框架：获取代理类及其目标类集合的映射关系，进一步获取目标类与代理对象列表的映射关系，进而遍历整个映射关系，从中获取目标类与代理对象列表，调用 ProxyManager 的 createProxy 方法获取代理对象，调用 BeanHelper 的 setBean 方法，将该代理对象重新放入 Bean Map 中。
+   
