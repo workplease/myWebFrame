@@ -102,3 +102,44 @@ AOP——面向切面编程，切面是 AOP 中的一个术语，表示从业务
    - ClassHelper：添加两个方法，一是获取应用包名下某父类（或接口）的所有子类（或实现类），二是获取应用包名下带有某注解的所有类。
    - AopHelper：添加三个方法，一是获取 Aspect 注解中设置的注解类，若该注解不是 Aspect 类，则可调用 ClassHelper 的 getClassSetByAnnotation 方法获取相关类，并把这些类放入目标类集合中，最终返回这个集合；二是获取代理类及其目标类集合之间的映射关系，一个代理类可对应一个目标类；三是根据代理类与目标类集合的关系分析出目标类与代理对象列表之间的映射关系。最后在 AopHelper 中通过一个静态块来初始化整个 AOP 框架：获取代理类及其目标类集合的映射关系，进一步获取目标类与代理对象列表的映射关系，进而遍历整个映射关系，从中获取目标类与代理对象列表，调用 ProxyManager 的 createProxy 方法获取代理对象，调用 BeanHelper 的 setBean 方法，将该代理对象重新放入 Bean Map 中。
    
+3）实现事务控制特性：
+
+1. 什么是事务：
+
+   数据库事务是作为单个工作单元处理的一系列操作。这些行动要么完全完成，要么完全不起作用。事务管理是面向 RDBMS 的企业应用程序中保证数据完整性和一致性的重要组成部分。通俗理解就是一个事情，我们要做到有始有终，必须是不可分割的整体。
+
+2. 相关概念：
+
+   - 事务的 ACID 特性：
+     - Atomicity（原子性）
+     - Consistency（一致性）
+     - Isolation（隔离性）
+     - Duration（持久性）
+   - 由事务并发引起的问题：
+     - Drity Read（脏读）
+     - Unrepeatable Read（不可重复读）
+     - Phanton Read（幻读）
+   - JDBC 解决方案：
+     - 事务隔离级别：
+       - READ_UNCOMMITTED
+       - READ_COMMITTED
+       - REPEATEABLE_READ
+       - SERIALIZABLE
+   - Spring 解决方案：
+     - 事务传播行为：
+       - PROPAGATION_REQUIRED
+       - PROPAGATION_REQUIRES_NEW
+       - PROPAGATION_NESTED
+       - PROPAGATION_SUPPORTS
+       - PROPAGATION_NOT_SUPPORTED
+       - PROPAGATION_NEVER
+       - PROPAGATION_MANDATORY
+     - 事务超时
+     - 只读事务
+
+3. 相关类：
+
+   - Transaction 注解：用于定义需要事务控制的方法。
+   - DatabaseHelper 类：定义事务常用的操作，比如开启事务，提交事务，回滚事务等。
+   - TransactionProxy 类：事务代理切面类，实现 Proxy 接口，在 doProxy 方法中完成事务控制的相关逻辑。
+   - AopHelper 类：对 createProxyMap 方法做调整，添加两个私有方法，一个用于添加普通切面代理，一个用于添加事务代理。
