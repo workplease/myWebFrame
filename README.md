@@ -143,3 +143,31 @@ AOP——面向切面编程，切面是 AOP 中的一个术语，表示从业务
    - DatabaseHelper 类：定义事务常用的操作，比如开启事务，提交事务，回滚事务等。
    - TransactionProxy 类：事务代理切面类，实现 Proxy 接口，在 doProxy 方法中完成事务控制的相关逻辑。
    - AopHelper 类：对 createProxyMap 方法做调整，添加两个私有方法，一个用于添加普通切面代理，一个用于添加事务代理。
+   
+### 4. 框架优化与功能扩展
+
+1）优化 Action 参数：
+
+考虑到 Controller 层一些方法并不需要用到 Param 参数，于是我们需要做到如果不需要调用这个参数时要怎么将其去掉。
+
+在之前的代码中，每次请求我们都创建了一个 Param 对象，并将其放入到 Action 参数中，我们可以考虑这样做，当框架拿到 Param 对象后，判断一下该对象是否为 null。如果为 null ，可以不将 Param 参数传入到 Action 方法中，反之则传进去。
+
+2）提供文件上传特性：
+
+1. 提供文件上传的场景：
+
+   通常情况下，我们可以在前端中通过一个基于 Ajax 的 form 表单来上传文件，当表单提交时，请求就会转发到 Controller 层中进行处理。由于 Controller 中包含有 Param 参数，于是可以通过重构 Param 参数，使其拥有获取表单字段的名/值对映射（Map fieldMap），指定一个具体的文件字段名称，并调用 getFile 方法即可获得对应的文件参数对象（FileParam），随后调用 Service 层的方法将 fieldMap 和 fieldParam 这两个参数传入。
+   
+2. 实现文件上传功能：
+
+   - FileParam：封装上传文件参数，内含文件表单的字段名，上传文件的文件们，文件大小，文件类型和字节输入流。
+   - FormParam：封装表单参数。
+   - Param：请求参数对象，包含了两个成员变量：List formParamList 与 List fileParamList，它们分别封装了表单参数和文件参数。随后提供了两个构造器，用于初始化 Param 对象，还提供了两个 get 方法，分别用于获取所有的表单参数和文件参数。返回值均为 Map 类型，其中 Map<String,Object\> 表示请求参数映射，<String,List<FileParam\>\> 表示上传文件映射。但对于同名的请求参数，通过一个特殊的分隔符进行了处理。
+   - UploadHelper：文件上传助手类，提供了判断文件是否是 multipart 类型、创建请求对象、上传单个文件，批量上传文件的方法，且在该类中初始化 ServletFileUpload 对象。
+     - boolean isMultipart(HttpServletRequest request)：只有在上传文件时对应的请求类型才是 multipart 类型。
+     - Param createParam(HttpServletRequest request)：其中我们使用了 ServletFileUpload 对象来解析请求参数，并通过遍历所有请求参数来初始化 List formParamList 和 List fileParamList 变量的值。在遍历请求参数时，需要对当前的 FileItem 对象进行判断，若为普通表单字段，则创建 FormParam 对象，并添加到 formParamList 对象中。否则即为文件上传字段，通过 FileUtil 提供的方法来获取上传文件的真实文件名，并从 FileItem 对象中构造 FilleParam 对象，并添加到 fileParamList 对象中，最后，通过 formParamList 与 fileParamList 来构造 Param 对象并返回。
+   - ConfigHelper：属性文件助手类，添加一个方法用于获取上传文件最大限制的值（该配置可以用用户自己在配置文件中定义，初始值为 100 MB）。
+   - FileUtil：文件操作工具类，提供两个方法，一个用于获取真实文件名，一个用于创建文件。
+   - StreamUtil：流操作工具类，UploadHelper 最后的两个上传文件需要该工具类提供方法将输入流复制到输出流。
+   - RequestHelper：请求助手类，对之前 DispatcherServlet 的代码进行封装，并且通过它的 createParam 方法来初始化 Param 对象。
+   - DispatcherServlet：请求转发器，将代码进行重构，最后获取的 View 对象分两种情况进行处理，直接在当前类中添加了两个私有方法 handleViewResult 与 handleDataResult 来封装代码。
