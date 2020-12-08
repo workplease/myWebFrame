@@ -171,3 +171,17 @@ AOP——面向切面编程，切面是 AOP 中的一个术语，表示从业务
    - StreamUtil：流操作工具类，UploadHelper 最后的两个上传文件需要该工具类提供方法将输入流复制到输出流。
    - RequestHelper：请求助手类，对之前 DispatcherServlet 的代码进行封装，并且通过它的 createParam 方法来初始化 Param 对象。
    - DispatcherServlet：请求转发器，将代码进行重构，最后获取的 View 对象分两种情况进行处理，直接在当前类中添加了两个私有方法 handleViewResult 与 handleDataResult 来封装代码。
+
+3）与 Servlet API 解耦：
+
+1. 设计思路：
+
+   目前在 Controiler 中是无法调用 Servlet API 的，因为无法获取 Request 和 Response 这类对象，但考虑到代码的耦合性，尽量让 Controller 完全不使用 Servlet API 就能操作 Request 和 Reponse 对象。我们需要提供一个线程安全的对象，通过它来封装 Request 和 Response 对象，并提供一系列常用的 Servlet API，这样我们就可以在 Controller 中随时通过该对象操作 Request 和 Reponse 对象的方法。并且，该对象是线程安全的，即，每个请求线程独自拥有一份 Request 和 Response 对象，不同请求线程之间是隔离的。
+
+2. 实现过程：
+
+   ServletHepler：Servlet 助手类，封装 Request 和 Response 对象，提供常用的 Servlet API 工具方法，并利用 ThreadLocal 技术来保证线程安全。
+
+   DispatcherServlet：更新 service 方法，在其中调用 ServletHelper 的 init 和 destroy 方法。
+
+   这样的话，所有的调用都来自于同一个请求线程，DispatcherServlet 是请求线程的入口，随后请求线程会现后来到 Controller 和 Service 中，我们只需要使用 ThreadLocal 来确保 ServletHelper 对象中的 Request 和 Response 对象线程安全即可。
