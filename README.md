@@ -214,3 +214,31 @@ AOP——面向切面编程，切面是 AOP 中的一个术语，表示从业务
    - HasAllRolesTag：标签类，用于判断当前用户是否拥有其中所有的角色。
    - User：注解类，用于判断当前用户是否登录。（包括：已认证与已记住）
    - AnthzAnnotationAspect：授权注解的切面，实现前置的增强机制，与之前实现注解的逻辑类似。
+   
+5）提供 Web 服务特性：
+
+1. Web 框架分析：
+
+   主流的有两种 Web 框架，SOAP 和 REST，对两者进行分析：
+
+   - SOAP：客户端将消息放入到 “信封” 的一个结构中，通过 HTTP 进行传输，服务端将 “信封” 解开并获取其中的消息。同样的，SOAP 提供了强大的 Sercurity 规范和实现，可以轻松的加密与签名所要发送的消息，安全性得以保证。
+   - REST：轻量级的 Web 框架，客户端只需要通过 HTTP 来表达请求路径与方法就能发送 REST 请求，在服务端将 HTTP 中的数据反序列化为我们需要的对象。但，REST 服务的安全问题需要我们自行实现，或者利用第三方安全控制框架，从而确保 REST 服务的安全性。
+
+   由于 SOAP 安全性高但是相对臃肿，REST 轻量小巧但是安全性不高，于是我们依据这两个框架设计两个插件，由开发者决定使用哪个插件。
+
+2. SOAP 整合：
+   - Soap：SOAP 服务注解，用于描述 SOAP 服务的名称，若为空，则默认使用服务类名为 SOAP 的服务。
+   - SoapHelper：SOAP 助手类，用于发布 SOAP 服务，此外还可以创建 SOAP 服务端，也就是 SOAP 服务接口代理对象。
+   - SoapConfig：工具类，用于读取 smart.properties 文件中的相关配置项。
+   - SoapConstant：SOAP 插件常量，目前只提供两个配置项，一个用于获取是否需要记录日志的信息，另一个表示 WSDL 的路径前缀。
+   - SoapServlet：SOAP Servlet，让这个 Servlet 去拦截所有的 SOAP 请求，该请求路径的前缀是 SoapConstant.SERVLET_URL 常量值。并且扩展 CXF 提供的 CXFNonSpringServlet，并在 Servlet 初始化的时候去初始化 CXF 总线与发布 SOAP 服务。
+   
+3. REST 整合：
+
+   与整合 SOAP 逻辑类似。
+
+   - Rest：REST 服务注解，用于描述 REST 服务的名称，若为空，则默认使用服务类名为 REST 的服务。
+   - RestHelper：REST 助手类，与 SoapHelper 类似，只不过这里除了考虑日志以外，还支持 JSONP 与 CORS 特性。
+   - RestConfig：与 SoapConfig 类似，将相关配置项都集中在该类中，通过 static 方法获取。
+   - RestConstant：REST 插件常量，REST 相关的常量都放在该类中。
+   - RestServlet：发布 REST 服务与发布 SOAP 服务基本类似，也需要继承 CXFNonSpringServlet 父类，并且提供一个 RestServlet，不同的是，这里不需要通过实现类获取接口。
