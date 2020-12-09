@@ -185,3 +185,32 @@ AOP——面向切面编程，切面是 AOP 中的一个术语，表示从业务
    DispatcherServlet：更新 service 方法，在其中调用 ServletHelper 的 init 和 destroy 方法。
 
    这样的话，所有的调用都来自于同一个请求线程，DispatcherServlet 是请求线程的入口，随后请求线程会现后来到 Controller 和 Service 中，我们只需要使用 ThreadLocal 来确保 ServletHelper 对象中的 Request 和 Response 对象线程安全即可。
+
+4）提供安全控制特性：
+
+1. 设计思路：
+
+   对于大部分应用系统而言，安全控制特性是很有必要的，本次考虑的是 Shiro 安全控制框架，将其整合到我们的 mySpring 中。并不是简单的调用 Shiro 框架，而是将其进行封装，提供更高级别的 API，让开发者使用起来更加简单，使开发效率更高效。但由于安全控制相对于整个框架而言，是相当独立的，于是将其作为一个插件使用，命名为 mySpring-security，只需要让开发者决定是否使用即可。
+
+2. 准备工作：
+
+   基本原则是：配置简单且使用方便，在配置上越少越好，在代码里只需要实现若干接口，并使用一些帮助类的 API 就能实现安全控制需求。
+
+   - SmartSecurity：Smart Security 接口，提供以下三个方法：根据用户名获取密码，在认证时需要调用；根据用户名获取角色名集合，在授权时需要调用；根据角色名获取操作名集合，在授权时需要调用。使用时只需要实现该接口即可。
+   - SecurityHelper：Security 助手类，提供了两个方法，一个用于登录，一个用于注销。
+   - AuthcException：认证异常类，用于非法访问时抛出的异常。
+   - AuthZException：授权异常类，用于当权限无效，即当前用户无权限访问某个操作时。
+
+3. 具体实现：
+
+   - SmartSecurityPlugin：Smart Security 插件，可以通过 Shiro 提供的初始化参数来定制默认的 Shiro 配置文件名，通过 ServletContext 注册 Listener 与 Filter。
+   - SmartSecurityFilter：安全过滤器，继承了 ShiroFilter，内含两个自定义的 Realm：SmartJdbcRealm 和 SmartCustomRealm。
+   - SmartJdbcRealm：基于 Smart 的 JDBC Realm，对 Shiro 提供的 JdbcRealm 进行了扩展，通过框架提供的 DatabaseHelper 的助手类来获取 DataSource，通过 SecurityConfig 常量类来获取相关 JDBC 配置项。
+   - Md5CredentialMatcher：MD5 密码匹配器，提供基于 MD5 的密码匹配机制。
+   - CodecUtil：编码与解码操作工具类，提供 MD5 的加密方法。
+   - SmartCustomRealm：基于 Smart 的自定义 Realm，继承自 AuthorizingRealm，覆盖了父类的认证和授权方法。
+   - SecurityConfig：从配置文件 smart.properties 中获取相关属性。
+   - SecurityConstant：常量接口，辅助属性的获取。
+   - HasAllRolesTag：标签类，用于判断当前用户是否拥有其中所有的角色。
+   - User：注解类，用于判断当前用户是否登录。（包括：已认证与已记住）
+   - AnthzAnnotationAspect：授权注解的切面，实现前置的增强机制，与之前实现注解的逻辑类似。
